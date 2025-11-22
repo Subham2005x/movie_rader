@@ -57,6 +57,12 @@ class _ComingsoonState extends State<Comingsoon> {
                           width: 300,
                           decoration: BoxDecoration(
                             color: Colors.red,
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                "https://image.tmdb.org/t/p/w500${widget.comingsoon[index]['backdrop_path']}",
+                              ),
+                              fit: BoxFit.cover,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
@@ -69,14 +75,14 @@ class _ComingsoonState extends State<Comingsoon> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Movie Name",
+                                    "${widget.comingsoon[index]['title']}",
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
-                                    "Date of Release",
+                                    "${widget.comingsoon[index]['release_date']}",
                                     style: TextStyle(fontSize: 12),
                                   ),
                                 ],

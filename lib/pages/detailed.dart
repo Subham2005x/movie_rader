@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:movie_rader/pages/watch.dart';
+import 'package:tmdb_api/tmdb_api.dart';
+import 'package:share_plus/share_plus.dart';
 
 class Detailed extends StatefulWidget {
   const Detailed({super.key, required this.movieId});
@@ -10,6 +13,91 @@ class Detailed extends StatefulWidget {
 }
 
 class _DetailedState extends State<Detailed> {
+  Map<dynamic, dynamic> movieDetails = {};
+  Map<dynamic, dynamic> movieCredits = {};
+  bool _isLoading = true;
+  bool _hasError = false;
+  int _retryCount = 0;
+  final int _maxRetries = 5;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMovieDetails();
+  }
+
+  final String apikey = "e0d56cbed100b1c110143ac896b51913";
+  final readaccesstoken =
+      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+
+  Future<void> _loadMovieDetails() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      var tmdbcustomlogs = TMDB(ApiKeys(apikey, readaccesstoken));
+
+      Map movieDetails = await tmdbcustomlogs.v3.movies.getDetails(
+        int.parse(widget.movieId),
+      );
+
+      Map movieCredits = await tmdbcustomlogs.v3.movies.getCredits(
+        int.parse(widget.movieId),
+      );
+
+      if (mounted) {
+        setState(() {
+          this.movieDetails = movieDetails;
+          this.movieCredits = movieCredits;
+          _isLoading = false;
+          _retryCount = 0; // Reset retry count on success
+        });
+      }
+    } catch (e) {
+      print(
+        'Error loading movie details (attempt ${_retryCount + 1}/$_maxRetries): $e',
+      );
+
+      if (mounted) {
+        if (_retryCount < _maxRetries) {
+          // Auto-retry after a delay
+          _retryCount++;
+          setState(() {
+            _isLoading = true;
+          });
+
+          // Wait before retrying (exponential backoff)
+          await Future.delayed(Duration(seconds: 2 * _retryCount));
+
+          if (mounted) {
+            _loadMovieDetails();
+          }
+        } else {
+          // Max retries reached
+          setState(() {
+            _hasError = true;
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(Detailed oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload data if movieId changes
+    if (oldWidget.movieId != widget.movieId) {
+      _loadMovieDetails();
+    }
+  }
+
+  details() async {
+    await _loadMovieDetails();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,109 +109,395 @@ class _DetailedState extends State<Detailed> {
         backgroundColor: Colors.red[400],
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.all(8),
-          child: Column(
-            children: [
-              Container(
-                // height: MediaQuery.of(context).size.height * 0.33,
-                // color: Colors.amber,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(1),
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Image.network(
-                          "https://beam-images.warnermediacdn.com/BEAM_LWM_DELIVERABLES/aa5b9295-8f9c-44f5-809b-3f2b84badfbf/8a7dd34b09c9c25336a3d850d4c431455e1aaaf0.jpg?host=wbd-images.prod-vod.h264.io&partner=beamcom",
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-
-                    Container(
-                      padding: EdgeInsets.only(left: 8, top: 8),
-                      alignment: Alignment.bottomLeft,
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.red[400]),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading movie details...',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                  if (_retryCount > 0)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8),
                       child: Text(
-                        "INTERSTELLAR ",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 30,
-                        ),
+                        'Fetch attempt $_retryCount/$_maxRetries',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-
-              Container(
-                // height: MediaQuery.of(context).size.height * 0.38,
-                // color: Colors.blue,
+            )
+          : _hasError
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+                  SizedBox(height: 16),
+                  Text(
+                    'Failed to load movie details',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Please try again',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      _retryCount = 0; // Reset retry count for manual retry
+                      _loadMovieDetails();
+                    },
+                    icon: Icon(Icons.refresh),
+                    label: Text('Retry Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red[400],
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(8),
                 child: Column(
                   children: [
                     Container(
-                      padding: EdgeInsets.all(6),
-                      height: 50,
-                      // color: const Color.fromRGBO(33, 150, 243, 1),
-                      child: Row(
+                      // height: MediaQuery.of(context).size.height * 0.33,
+                      // color: Colors.amber,
+                      child: Column(
                         children: [
-                          Icon(Icons.star, color: Colors.yellow, size: 20),
-                          SizedBox(width: 2),
-                          Text(
-                            "8.5",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Icon(Icons.align_horizontal_left_rounded, size: 20),
-                          SizedBox(width: 2),
                           Container(
-                            child: Text(
-                              " 1H 30m",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            padding: EdgeInsets.all(1),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
                               ),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ListView.builder(
-                              itemCount: 5,
-                              scrollDirection: Axis.horizontal,
-                              itemBuilder: (BuildContext context, int index) {
-                                return InkWell(
-                                  onTap: () {},
-                                  splashColor: Colors.transparent,
-                                  child: Container(
-                                    height: 30,
-                                    margin: EdgeInsets.symmetric(horizontal: 5),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(20),
-                                      color: Colors.transparent,
-                                      border: Border.all(
-                                        color: Colors.red,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        "Adventure",
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
+                              child: movieDetails['backdrop_path'] != null
+                                  ? Image.network(
+                                      "https://image.tmdb.org/t/p/original${movieDetails['backdrop_path']}",
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        else {
+                                          return Container(
+                                            height: 200,
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                color: Colors.red[400],
+                                                value:
+                                                    loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                    : null,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                    )
+                                  : Container(
+                                      height: 200,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.red[400],
                                         ),
                                       ),
                                     ),
+                            ),
+                          ),
+
+                          Container(
+                            padding: EdgeInsets.only(left: 8, top: 8),
+                            alignment: Alignment.bottomLeft,
+                            child: Text(
+                              "${movieDetails['original_title'] ?? 'Loading...'}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 30,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    Container(
+                      // height: MediaQuery.of(context).size.height * 0.38,
+                      // color: Colors.blue,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(6),
+                            height: 50,
+                            // color: const Color.fromRGBO(33, 150, 243, 1),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  color: Colors.yellow,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 2),
+                                Text(
+                                  "${movieDetails['vote_average']?.toStringAsFixed(1) ?? ' '}",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Icon(
+                                  Icons.align_horizontal_left_rounded,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 5),
+                                Container(
+                                  child: Text(
+                                    movieDetails['runtime'] != null
+                                        ? '${movieDetails['runtime'] ~/ 60}H ${movieDetails['runtime'] % 60}m'
+                                        : ' N/A ',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: ListView.builder(
+                                    itemCount: movieDetails["genres"] != null
+                                        ? movieDetails["genres"].length
+                                        : 0,
+                                    scrollDirection: Axis.horizontal,
+                                    itemBuilder: (BuildContext context, int index) {
+                                      return InkWell(
+                                        onTap: () {},
+                                        splashColor: Colors.transparent,
+                                        child: Container(
+                                          height: 30,
+                                          margin: EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                          ),
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            color: Colors.transparent,
+                                            border: Border.all(
+                                              color: Colors.red,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              "${movieDetails["genres"][index]["name"]}",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.3,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.4,
+                                  // color: Colors.yellow,
+                                  alignment: Alignment.topLeft,
+                                  child: Card(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: movieDetails["poster_path"] != null
+                                        ? Image.network(
+                                            "https://image.tmdb.org/t/p/w500${movieDetails['poster_path']}",
+                                            fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null)
+                                                return child;
+                                              return Center(
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.red[400],
+                                                  value:
+                                                      loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                                .cumulativeBytesLoaded /
+                                                            loadingProgress
+                                                                .expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey[800],
+                                                    child: Center(
+                                                      child: Icon(
+                                                        Icons.movie,
+                                                        size: 50,
+                                                        color: Colors.grey,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                          )
+                                        : Container(
+                                            color: Colors.grey[800],
+                                            child: Center(
+                                              child: Icon(
+                                                Icons.movie,
+                                                size: 50,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                Container(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.56,
+                                  // color: Colors.red[400],
+                                  alignment: Alignment.topLeft,
+                                  padding: EdgeInsets.all(10),
+                                  child: SingleChildScrollView(
+                                    child: Text(
+                                      "${movieDetails['overview'] ?? 'Loading...'}",
+                                      style: TextStyle(fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            child: Text(
+                              "Credits",
+                              style: TextStyle(
+                                fontSize: 25,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 150,
+                            width: MediaQuery.of(context).size.width,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: movieCredits['cast'] != null
+                                  ? movieCredits['cast'].length
+                                  : 0,
+                              itemBuilder: (BuildContext context, int index) {
+                                return Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 8),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 50,
+                                        backgroundColor: Colors.grey[800],
+                                        child: ClipOval(
+                                          child:
+                                              (movieCredits['cast'] != null &&
+                                                  movieCredits['cast'].length >
+                                                      index &&
+                                                  movieCredits['cast'][index]['profile_path'] !=
+                                                      null)
+                                              ? Image.network(
+                                                  "https://image.tmdb.org/t/p/w200${movieCredits['cast'][index]['profile_path']}",
+                                                  fit: BoxFit.cover,
+                                                  width: 100,
+                                                  height: 100,
+                                                  loadingBuilder: (context, child, loadingProgress) {
+                                                    if (loadingProgress == null)
+                                                      return child;
+                                                    return Center(
+                                                      child: CircularProgressIndicator(
+                                                        color: Colors.red[400],
+                                                        strokeWidth: 2,
+                                                        value:
+                                                            loadingProgress
+                                                                    .expectedTotalBytes !=
+                                                                null
+                                                            ? loadingProgress
+                                                                      .cumulativeBytesLoaded /
+                                                                  loadingProgress
+                                                                      .expectedTotalBytes!
+                                                            : null,
+                                                      ),
+                                                    );
+                                                  },
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Icon(
+                                                          Icons.person,
+                                                          size: 50,
+                                                          color: Colors.grey,
+                                                        );
+                                                      },
+                                                )
+                                              : Icon(
+                                                  Icons.person,
+                                                  size: 50,
+                                                  color: Colors.grey,
+                                                ),
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        "${movieCredits['cast'][index]['name']}",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        "${movieCredits['cast'][index]['character'] ?? movieCredits['cast'][index]['known_for_department']}",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -132,171 +506,101 @@ class _DetailedState extends State<Detailed> {
                         ],
                       ),
                     ),
+
+                    SizedBox(height: 10),
+
                     Container(
-                      height: MediaQuery.of(context).size.height * 0.3,
+                      // height: MediaQuery.of(context).size.height * 0.07,
+                      // color: Colors.green,
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.4,
-                            // color: Colors.yellow,
-                            alignment: Alignment.topLeft,
-                            child: Card(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      Watch(movieID: widget.movieId),
+                                ),
+                              );
+                            },
+                            style: ButtonStyle(
+                              shape: WidgetStateProperty.all(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
                               ),
-                              child: Image.network(
-                                "https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg",
+                              elevation: WidgetStateProperty.all(5),
+                              fixedSize: WidgetStateProperty.all(Size(220, 60)),
+                              padding: WidgetStateProperty.all(
+                                EdgeInsets.fromLTRB(50, 5, 40, 5),
+                              ),
+                              backgroundColor: WidgetStateProperty.all(
+                                Colors.red[600],
+                              ),
+                              foregroundColor: WidgetStateProperty.all(
+                                Colors.white,
                               ),
                             ),
-                          ),
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.56,
-                            // color: Colors.red[400],
-                            alignment: Alignment.topLeft,
-                            padding: EdgeInsets.all(10),
-                            child: Text(
-                              "When Earth becomes uninhabitable in the future, a farmer and ex-NASA pilot, Joseph Cooper, is tasked to pilot a spacecraft, along with a team of researchers, to find a new planet for humans.",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(8),
-                      child: Text(
-                        "Credits",
-                        style: TextStyle(
-                          fontSize: 25,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 150,
-                      width: MediaQuery.of(context).size.width,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: 10,
-                        itemBuilder: (BuildContext context, int index) {
-                          return Container(
-                            margin: EdgeInsets.symmetric(horizontal: 8),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                            child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 50,
-                                  backgroundImage: NetworkImage(
-                                    "https://img.huffingtonpost.com/asset/5ff3371b260000ae2b7a3827.jpeg?cache=AfBaoaRwUB&ops=scalefit_500_noupscale",
-                                  ),
-                                ),
-                                SizedBox(height: 4),
                                 Text(
-                                  "Name",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  "Role",
+                                  "Watch Now",
                                   style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                Icon(Icons.play_arrow, size: 35),
                               ],
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 10),
-
-              Container(
-                // height: MediaQuery.of(context).size.height * 0.07,
-                // color: Colors.green,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ButtonStyle(
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
                           ),
-                        ),
-                        elevation: WidgetStateProperty.all(5),
-                        fixedSize: WidgetStateProperty.all(Size(220, 60)),
-                        padding: WidgetStateProperty.all(
-                          EdgeInsets.fromLTRB(50, 5, 40, 5),
-                        ),
-                        backgroundColor: WidgetStateProperty.all(
-                          Colors.red[600],
-                        ),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            "Watch Now",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+
+                          ElevatedButton(
+                            onPressed: () {
+                              Share.share(
+                                'Check out this movie: ${movieDetails['homepage']}',
+                              );
+                            },
+                            style: ButtonStyle(
+                              shape: WidgetStateProperty.all(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                              elevation: WidgetStateProperty.all(5),
+                              fixedSize: WidgetStateProperty.all(Size(140, 60)),
+                              padding: WidgetStateProperty.all(
+                                EdgeInsets.fromLTRB(30, 5, 25, 5),
+                              ),
+                              backgroundColor: WidgetStateProperty.all(
+                                Colors.blue[800],
+                              ),
+                              foregroundColor: WidgetStateProperty.all(
+                                Colors.white,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  "Share ",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Icon(Icons.share, size: 28),
+                              ],
                             ),
                           ),
-                          Icon(Icons.play_arrow, size: 35),
-                        ],
-                      ),
-                    ),
-
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ButtonStyle(
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                        ),
-                        elevation: WidgetStateProperty.all(5),
-                        fixedSize: WidgetStateProperty.all(Size(140, 60)),
-                        padding: WidgetStateProperty.all(
-                          EdgeInsets.fromLTRB(30, 5, 25, 5),
-                        ),
-                        backgroundColor: WidgetStateProperty.all(
-                          Colors.blue[800],
-                        ),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
-                      ),
-                      child: Row(
-                        children: [
-                          Text(
-                            "Share ",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.share, size: 28),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

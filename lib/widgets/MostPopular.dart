@@ -33,9 +33,7 @@ class _MostpopularState extends State<Mostpopular> {
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.mostpopular.length > 10
-                        ? 10
-                        : widget.mostpopular.length,
+                    itemCount: widget.mostpopular.length,
                     itemBuilder: (BuildContext context, int index) {
                       return InkWell(
                         onTap: () => {
@@ -50,8 +48,8 @@ class _MostpopularState extends State<Mostpopular> {
                           ),
                         },
                         child: Container(
-                          height: 200,
-                          width: 300,
+                         height: 300,
+                          width: 150,
                           margin: EdgeInsets.all(8),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,6 +59,12 @@ class _MostpopularState extends State<Mostpopular> {
                                 width: 300,
                                 decoration: BoxDecoration(
                                   color: Colors.red,
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                      "https://image.tmdb.org/t/p/w500${widget.mostpopular[index]['poster_path']}",
+                                    ),
+                                    fit: BoxFit.cover,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
@@ -75,14 +79,16 @@ class _MostpopularState extends State<Mostpopular> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "Movie Name",
+                                          widget.mostpopular[index]['title'] ?? "Movie Name",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          "Year",
+                                          widget.mostpopular[index]['release_date'] != null
+                                              ? widget.mostpopular[index]['release_date'].toString().split('-')[0]
+                                              : "Year",
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
@@ -96,7 +102,7 @@ class _MostpopularState extends State<Mostpopular> {
                                         size: 16,
                                       ),
                                       SizedBox(width: 2),
-                                      Text("8.5"),
+                                      Text("${widget.mostpopular[index]['vote_average'] == null ? 'N/A' : widget.mostpopular[index]['vote_average'].toStringAsFixed(1)}"),
                                     ],
                                   ),
                                 ],

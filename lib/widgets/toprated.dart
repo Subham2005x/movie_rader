@@ -33,9 +33,7 @@ class _TopratedState extends State<Toprated> {
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.toprated.length > 10
-                        ? 10
-                        : widget.toprated.length,
+                    itemCount: widget.toprated.length,
                     itemBuilder: (BuildContext context, int index) {
                       return InkWell(
                         onTap: () => {
@@ -61,6 +59,12 @@ class _TopratedState extends State<Toprated> {
                                 width: 150,
                                 decoration: BoxDecoration(
                                   color: Colors.red,
+                                  image: DecorationImage(
+                                    image: NetworkImage(
+                                      "https://image.tmdb.org/t/p/w500${widget.toprated[index]['poster_path']}",
+                                    ),
+                                    fit: BoxFit.cover,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
@@ -75,14 +79,14 @@ class _TopratedState extends State<Toprated> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "Movie Name",
+                                          "${widget.toprated[index]['title'] ?? 'Movie Name'}",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          "Year",
+                                          widget.toprated[index]['release_date'] != null ? DateTime.parse(widget.toprated[index]['release_date']).year.toString() : 'Year',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
@@ -96,7 +100,7 @@ class _TopratedState extends State<Toprated> {
                                         size: 16,
                                       ),
                                       SizedBox(width: 2),
-                                      Text("8.5"),
+                                      Text("${widget.toprated[index]['vote_average'] == null ? 'N/A' : widget.toprated[index]['vote_average'].toStringAsFixed(1)}"),
                                     ],
                                   ),
                                 ],

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:movie_rader/pages/detailed.dart';
-// import 'package:google_fonts/google_fonts.dart';
 
-class Trendingmovie extends StatefulWidget {
-  const Trendingmovie({super.key, required this.trendingmovies});
+class Tophindi extends StatefulWidget {
+  const Tophindi({super.key, required this.tophindi});
 
-  final List trendingmovies;
+  final List tophindi;
+
   @override
-  State<Trendingmovie> createState() => _TrendingmovieState();
+  State<Tophindi> createState() => _TophindiState();
 }
 
-class _TrendingmovieState extends State<Trendingmovie> {
+class _TophindiState extends State<Tophindi> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -21,19 +21,19 @@ class _TrendingmovieState extends State<Trendingmovie> {
             alignment: Alignment.topLeft,
             padding: EdgeInsets.all(8),
             child: Text(
-              "Trending Now",
+              "Top Rated - Hindi",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           Container(
             height: 314,
-            child: widget.trendingmovies.isEmpty
+            child: widget.tophindi.isEmpty
                 ? Center(
                     child: CircularProgressIndicator(color: Colors.red[400]),
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.trendingmovies.length,
+                    itemCount: widget.tophindi.length,
                     itemBuilder: (BuildContext context, int index) {
                       return InkWell(
                         onTap: () => {
@@ -41,8 +41,8 @@ class _TrendingmovieState extends State<Trendingmovie> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => Detailed(
-                                movieId: widget.trendingmovies[index]['id']
-                                .toString(),
+                                movieId: widget.tophindi[index]['id']
+                                    .toString(),
                               ),
                             ),
                           ),
@@ -61,7 +61,7 @@ class _TrendingmovieState extends State<Trendingmovie> {
                                   color: Colors.red,
                                   image: DecorationImage(
                                     image: NetworkImage(
-                                      "https://image.tmdb.org/t/p/w500${widget.trendingmovies[index]['poster_path']}",
+                                      "https://image.tmdb.org/t/p/w500${widget.tophindi[index]['poster_path']}",
                                     ),
                                     fit: BoxFit.cover,
                                   ),
@@ -79,14 +79,14 @@ class _TrendingmovieState extends State<Trendingmovie> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "${widget.trendingmovies[index]['original_title'] ?? 'Movie Name'}",
+                                          "${widget.tophindi[index]['title'] ?? 'Movie Name'}",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          "${widget.trendingmovies[index]['release_date'] == null ? 'N/A' : widget.trendingmovies[index]['release_date'].substring(0, 4)}",
+                                          widget.tophindi[index]['release_date'] != null ? DateTime.parse(widget.tophindi[index]['release_date']).year.toString() : 'Year',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
@@ -100,7 +100,7 @@ class _TrendingmovieState extends State<Trendingmovie> {
                                         size: 16,
                                       ),
                                       SizedBox(width: 2),
-                                      Text("${widget.trendingmovies[index]['vote_average'] == null ? 'N/A' : widget.trendingmovies[index]['vote_average'].toStringAsFixed(1)}"),
+                                      Text("${widget.tophindi[index]['vote_average'] == null ? 'N/A' : widget.tophindi[index]['vote_average'].toStringAsFixed(1)}"),
                                     ],
                                   ),
                                 ],
