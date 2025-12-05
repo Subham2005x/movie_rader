@@ -5,16 +5,18 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tmdb_api/tmdb_api.dart';
 
-class Watch extends StatefulWidget {
-  const Watch({super.key, required this.movieID});
+class WatchTv extends StatefulWidget {
+  const WatchTv({super.key, required this.seriesID, required this.seasonNumber, required this.episodeNumber});
 
-  final String movieID;
+  final String seriesID;
+  final int seasonNumber;
+  final int episodeNumber;
 
   @override
-  State<Watch> createState() => _WatchState();
+  State<WatchTv> createState() => _WatchTvState();
 }
 
-class _WatchState extends State<Watch> {
+class _WatchTvState extends State<WatchTv> {
   Map<dynamic, dynamic> movieDetails = {};
   final String apikey = "e0d56cbed100b1c110143ac896b51913";
   final readaccesstoken =
@@ -33,8 +35,8 @@ class _WatchState extends State<Watch> {
     try {
       var tmdbcustomlogs = TMDB(ApiKeys(apikey, readaccesstoken));
 
-      Map movieDetails = await tmdbcustomlogs.v3.movies.getDetails(
-        int.parse(widget.movieID),
+      Map movieDetails = await tmdbcustomlogs.v3.tv.getDetails(
+        int.parse(widget.seriesID),
       );
 
       if (mounted) {
@@ -122,7 +124,7 @@ class _WatchState extends State<Watch> {
             onNavigationRequest: (NavigationRequest request) {
               // Get the initial provider URL domain
               final providerUrl =
-                  'https://www.nontongo.win/embed/movie/${widget.movieID}';
+                  'https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}';
               final providerDomain = Uri.parse(providerUrl).host;
               final requestDomain = Uri.parse(request.url).host;
 
@@ -237,13 +239,13 @@ class _WatchState extends State<Watch> {
           ),
         )
         ..loadRequest(
-          Uri.parse('https://www.nontongo.win/embed/movie/${widget.movieID}'),
+          Uri.parse('https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}'),
         );
     } else {
       // For Windows/Web, automatically open in browser
       _isLoading = false;
       Future.delayed(Duration(milliseconds: 500), () {
-        _launchURL('https://www.nontongo.win/embed/movie/${widget.movieID}');
+        _launchURL('https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}');
       });
     }
   }
@@ -311,7 +313,7 @@ class _WatchState extends State<Watch> {
                     ),
                   ),
 
-                  // Movie Details Below Video (YouTube-style)
+                  
                   if (_hasError)
                     Container(
                       width: double.infinity,
@@ -388,7 +390,7 @@ class _WatchState extends State<Watch> {
                         children: [
                           // Title
                           Text(
-                            "${movieDetails['original_title'] ?? 'Loading...'}",
+                            "${movieDetails['name'] ?? 'Loading...'}",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 20,
@@ -402,8 +404,10 @@ class _WatchState extends State<Watch> {
                           Row(
                             children: [
                               // Runtime
-                              if (movieDetails['runtime'] != null &&
-                                  movieDetails['runtime'] > 0)
+
+                               (movieDetails['episode_run_time'] != null &&
+                                  (movieDetails['episode_run_time'] as List)
+                                      .isNotEmpty)?
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -416,13 +420,13 @@ class _WatchState extends State<Watch> {
                                   child: Row(
                                     children: [
                                       Icon(
-                                        Icons.access_time,
+                                        Icons.schedule,
                                         size: 16,
                                         color: Colors.grey[400],
                                       ),
                                       SizedBox(width: 6),
                                       Text(
-                                        '${movieDetails['runtime'] ~/ 60}h ${movieDetails['runtime'] % 60}m',
+                                        "${movieDetails['episode_run_time'][0]} min",
                                         style: TextStyle(
                                           fontSize: 13,
                                           color: Colors.grey[300],
@@ -431,8 +435,7 @@ class _WatchState extends State<Watch> {
                                       ),
                                     ],
                                   ),
-                                )
-                              else
+                                ): 
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -443,14 +446,14 @@ class _WatchState extends State<Watch> {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    'Runtime N/A',
+                                    ' N/A',
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey[500],
                                     ),
                                   ),
                                 ),
-
+                                 
                               SizedBox(width: 12),
 
                               // Rating
@@ -554,7 +557,7 @@ class _WatchState extends State<Watch> {
                                   ),
                                   SizedBox(height: 12),
                                   Text(
-                                    "1. Click on the play button repeatedly in the player to start the movie playback.",
+                                    "1. Click on the play button repeatedly in the player to start the Episode playback.",
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -572,7 +575,7 @@ class _WatchState extends State<Watch> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    "3. If playback issues persist, click on the player repeatedly until the menu button in the top-left corner is visible. Click on it to change the servers and check for the movie on different servers. \n Don't Worry about those clicking Redirects we have blocked it all and nothing will be opened in background.",
+                                    "3. If playback issues persist, click on the player repeatedly until the menu button in the top-left corner is visible. Click on it to change the servers and check for the episode on different servers. \n Don't Worry about those clicking Redirects we have blocked it all and nothing will be opened in background.",
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 14,
@@ -582,7 +585,7 @@ class _WatchState extends State<Watch> {
                                   SizedBox(height: 12),
                                   Center(
                                     child: Text(
-                                      "🍿 Enjoy your movie!",
+                                      "🍿 Enjoy your episode!",
                                       style: TextStyle(
                                         color: Colors.amber,
                                         fontWeight: FontWeight.bold,
@@ -612,7 +615,7 @@ class _WatchState extends State<Watch> {
                         ),
                         SizedBox(height: 24),
                         Text(
-                          'Failed to load movie details',
+                          'Failed to load season details',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -652,7 +655,7 @@ class _WatchState extends State<Watch> {
                         CircularProgressIndicator(color: Colors.red[400]),
                         SizedBox(height: 16),
                         Text(
-                          'Loading movie details...',
+                          'Loading Season details...',
                           style: TextStyle(color: Colors.grey[400]),
                         ),
                         if (_retryCount > 0)
@@ -693,7 +696,7 @@ class _WatchState extends State<Watch> {
                         ElevatedButton.icon(
                           onPressed: () {
                             _launchURL(
-                              'https://www.nontongo.win/embed/movie/${widget.movieID}',
+                              'https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}',
                             );
                           },
                           icon: Icon(Icons.play_circle_outline, size: 28),

@@ -1,26 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:movie_rader/widgets/comingsoon.dart';
-import 'package:tmdb_api/tmdb_api.dart';
-import 'package:movie_rader/widgets/trendingmovie.dart';
 import 'package:movie_rader/widgets/MostPopular.dart';
-import 'package:movie_rader/widgets/toprated.dart';
-// import 'package:movie_rader/widgets/tophindi.dart';
-import 'package:movie_rader/pages/search.dart';
-import 'package:movie_rader/pages/tv.dart' as TvPage;
+import 'package:tmdb_api/tmdb_api.dart';
+import 'package:movie_rader/pages/home.dart';
+import 'package:movie_rader/pages/searchtv.dart';
 
-class Home extends StatefulWidget {
-  const Home({super.key});
+class TvShow extends StatefulWidget {
+  const TvShow({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  State<TvShow> createState() => _TvShowState();
 }
 
-class _HomeState extends State<Home> {
-  List trendingmovies = [];
-  List comingsoon = [];
+class _TvShowState extends State<TvShow> {
+  List airingtoday = [];
+  List onair = [];
   List mostpopular = [];
   List toprated = [];
-  List tophindi = [];
   List genres = [];
   bool _isLoading = true;
   bool _hasError = false;
@@ -49,24 +44,16 @@ class _HomeState extends State<Home> {
         logConfig: ConfigLogger(showLogs: true, showErrorLogs: true),
       );
 
-      Map trendingresult = await tmdbcustomlogs.v3.trending.getTrending();
-      Map comingsoonresult = await tmdbcustomlogs.v3.movies.getUpcoming();
-      Map mostpopularresult = await tmdbcustomlogs.v3.movies.getPopular();
-      Map topratedresult = await tmdbcustomlogs.v3.movies.getTopRated();
-      Map genresresult = await tmdbcustomlogs.v3.genres.getMovieList();
-
-      // Sort coming soon movies by release date (newest first)
-      List comingsoonList = comingsoonresult['results'] ?? [];
-      comingsoonList.sort((a, b) {
-        String dateA = a['release_date'] ?? '';
-        String dateB = b['release_date'] ?? '';
-        return dateB.compareTo(dateA); // Descending order (newest first)
-      });
+      Map airingtodayresult = await tmdbcustomlogs.v3.tv.getAiringToday();
+      Map genresresult = await tmdbcustomlogs.v3.genres.getTvlist();
+      Map onairtodayresult = await tmdbcustomlogs.v3.tv.getOnTheAir();
+      Map mostpopularresult = await tmdbcustomlogs.v3.tv.getPopular();
+      Map topratedresult = await tmdbcustomlogs.v3.tv.getTopRated();
 
       if (mounted) {
         setState(() {
-          trendingmovies = trendingresult['results'] ?? [];
-          comingsoon = comingsoonList;
+          airingtoday = airingtodayresult['results'] ?? [];
+          onair = onairtodayresult['results'] ?? [];
           mostpopular = mostpopularresult['results'] ?? [];
           toprated = topratedresult['results'] ?? [];
           genres = genresresult['genres'] ?? [];
@@ -99,6 +86,7 @@ class _HomeState extends State<Home> {
         }
       }
     }
+    print(mostpopular);
   }
 
   int _selectedIndex = 0;
@@ -113,7 +101,8 @@ class _HomeState extends State<Home> {
           if (index == 0) {
             return Home();
           } else if (index == 1) {
-            return TvPage.TvShow();
+            // Replace with your TV Shows
+            return Home();
           } else {
             return Home();
           }
@@ -137,7 +126,7 @@ class _HomeState extends State<Home> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SearchMovie()),
+                MaterialPageRoute(builder: (context) => Searchtv()),
               );
             },
             icon: Icon(Icons.search),
@@ -204,18 +193,19 @@ class _HomeState extends State<Home> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Comingsoon(comingsoon: comingsoon),
-                  // Tophindi(tophindi: tophindi),
-                  Trendingmovie(trendingmovies: trendingmovies),
+                  // Comingsoon(comingsoon: comingsoon),
+                  // // Tophindi(tophindi: tophindi),
+                  // Trendingmovie(trendingmovies: trendingmovies),
+                  // Mostpopular(mostpopular: mostpopular),
+                  // Toprated(toprated: toprated),
                   Mostpopular(mostpopular: mostpopular),
-                  Toprated(toprated: toprated),
                 ],
               ),
             ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Movies'),
-          BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'Web Series'),
+          BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'TV Shows'),
           BottomNavigationBarItem(
             icon: Icon(Icons.local_attraction),
             label: 'Anime',
