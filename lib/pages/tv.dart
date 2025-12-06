@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:movie_rader/widgets/MostPopular.dart';
+import 'package:movie_rader/widgets/MostPopulartv.dart';
+import 'package:movie_rader/widgets/airingtodaytv.dart';
+import 'package:movie_rader/widgets/popularhinditv.dart';
+import 'package:movie_rader/widgets/topratedtv.dart';
 import 'package:tmdb_api/tmdb_api.dart';
 import 'package:movie_rader/pages/home.dart';
 import 'package:movie_rader/pages/searchtv.dart';
 
 class TvShow extends StatefulWidget {
-  const TvShow({super.key});
+  final int initialIndex;
+  const TvShow({super.key, this.initialIndex = 1});
 
   @override
   State<TvShow> createState() => _TvShowState();
@@ -17,6 +21,7 @@ class _TvShowState extends State<TvShow> {
   List mostpopular = [];
   List toprated = [];
   List genres = [];
+  List popularhinditv = [];
   bool _isLoading = true;
   bool _hasError = false;
   int _retryCount = 0;
@@ -25,12 +30,6 @@ class _TvShowState extends State<TvShow> {
   final String apikey = "e0d56cbed100b1c110143ac896b51913";
   final readaccesstoken =
       "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
-
-  @override
-  void initState() {
-    super.initState();
-    loadmovies();
-  }
 
   Future<void> loadmovies() async {
     setState(() {
@@ -49,6 +48,43 @@ class _TvShowState extends State<TvShow> {
       Map onairtodayresult = await tmdbcustomlogs.v3.tv.getOnTheAir();
       Map mostpopularresult = await tmdbcustomlogs.v3.tv.getPopular();
       Map topratedresult = await tmdbcustomlogs.v3.tv.getTopRated();
+      Map popularhinditvresult = await tmdbcustomlogs.v3.tv.getPopular(
+        language: "hi-IN",
+      );
+
+      List popularhinditvsort = List.from(
+        popularhinditvresult['results'] ?? [],
+      );
+
+      // Fetch detailed info for each series (to get accurate 'popularity') and then sort by that popularity.
+      final detailFutures = popularhinditvsort.map((item) async {
+        final id = item['id'];
+        try {
+          // fetch details with Hindi language parameter and capture original language
+          Map details = await tmdbcustomlogs.v3.tv.getDetails(
+            id,
+            language: "hi-IN",
+          );
+          return {
+            ...item,
+            'popularity': details['popularity'] ?? item['popularity'] ?? 0,
+            'origin_country':
+                details['origin_country'] ?? item['origin_country'] ?? 'IN',
+          };
+        } catch (e) {
+          return {
+            ...item,
+            'popularity': item['popularity'] ?? 0,
+            'origin_country': item['origin_country'] ?? 'IN',
+          };
+        }
+      }).toList();
+
+      final List popularHindiWithDetails = await Future.wait(detailFutures);
+
+      popularHindiWithDetails.sort(
+        (a, b) => (b['popularity'] as num).compareTo(a['popularity'] as num),
+      );
 
       if (mounted) {
         setState(() {
@@ -57,6 +93,7 @@ class _TvShowState extends State<TvShow> {
           mostpopular = mostpopularresult['results'] ?? [];
           toprated = topratedresult['results'] ?? [];
           genres = genresresult['genres'] ?? [];
+          popularhinditv = popularHindiWithDetails;
           _isLoading = false;
           _retryCount = 0;
         });
@@ -86,23 +123,32 @@ class _TvShowState extends State<TvShow> {
         }
       }
     }
-    print(mostpopular);
+    print(popularhinditv);
   }
 
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+    loadmovies();
+  }
+
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
           if (index == 0) {
             return Home();
           } else if (index == 1) {
-            // Replace with your TV Shows
-            return Home();
+            return TvShow(initialIndex: 1);
           } else {
             return Home();
           }
@@ -142,7 +188,7 @@ class _TvShowState extends State<TvShow> {
                   CircularProgressIndicator(color: Colors.red[400]),
                   SizedBox(height: 16),
                   Text(
-                    'Loading movies...',
+                    'Loading Series...',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                   if (_retryCount > 0)
@@ -198,7 +244,10 @@ class _TvShowState extends State<TvShow> {
                   // Trendingmovie(trendingmovies: trendingmovies),
                   // Mostpopular(mostpopular: mostpopular),
                   // Toprated(toprated: toprated),
-                  Mostpopular(mostpopular: mostpopular),
+                  TopratedTv(toprated: toprated),
+                  Popularhinditv(popularhinditv: popularhinditv),
+                  MostpopularTv(mostpopular: mostpopular),
+                  Airingtodaytv(airingtoday: airingtoday),
                 ],
               ),
             ),
@@ -206,16 +255,14 @@ class _TvShowState extends State<TvShow> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Movies'),
           BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'TV Shows'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_attraction),
-            label: 'Anime',
-          ),
         ],
         onTap: (index) {
           _onItemTapped(index);
         },
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.red[400],
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.black,
       ),
     );
   }

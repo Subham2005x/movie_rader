@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:movie_rader/pages/watch.dart';
 import 'package:movie_rader/pages/watchtv.dart';
 import 'package:tmdb_api/tmdb_api.dart';
-import 'package:share_plus/share_plus.dart';
 
 class DetailedTv extends StatefulWidget {
   const DetailedTv({super.key, required this.movieId});
@@ -91,7 +89,6 @@ class _DetailedTvState extends State<DetailedTv> {
     }
     print(seasonDetail);
   }
-  
 
   int slectedSeasonIndex = 0;
 
@@ -499,11 +496,18 @@ class _DetailedTvState extends State<DetailedTv> {
                             itemBuilder: (BuildContext context, int index) {
                               return InkWell(
                                 onTap: () {
-                                  Navigator.push(context, MaterialPageRoute(builder: (context) => WatchTv(
-                                    seriesID: widget.movieId,
-                                    seasonNumber: seasonDetail['season_number'],
-                                    episodeNumber: seasonDetail['episodes'][index]['episode_number'],
-                                  )));
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => WatchTv(
+                                        seriesID: widget.movieId,
+                                        seasonNumber:
+                                            seasonDetail['season_number'],
+                                        episodeNumber:
+                                            seasonDetail['episodes'][index]['episode_number'],
+                                      ),
+                                    ),
+                                  );
                                 },
                                 splashColor: Colors.transparent,
                                 child: Container(
@@ -518,71 +522,122 @@ class _DetailedTvState extends State<DetailedTv> {
                                     vertical: 8,
                                     horizontal: 4,
                                   ),
-                                  child: ListTile(
-                                    leading:
-                                        seasonDetail['episodes'][index]['still_path'] !=
-                                            null
-                                        ? Stack(
-                                            children: [
-                                              Image.network(
-                                                "https://image.tmdb.org/t/p/w200${seasonDetail['episodes'][index]['still_path']}",
-                                                fit: BoxFit.cover,
-                                                width: 110,
-                                                loadingBuilder: (context, child, loadingProgress) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return Center(
-                                                    child: CircularProgressIndicator(
-                                                      color: Colors.red[400],
-                                                      value:
-                                                          loadingProgress
-                                                                  .expectedTotalBytes !=
-                                                              null
-                                                          ? loadingProgress
-                                                                    .cumulativeBytesLoaded /
-                                                                loadingProgress
-                                                                    .expectedTotalBytes!
-                                                          : null,
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 120,
+                                        height: 100,
+                                        margin: EdgeInsets.only(
+                                          right: 12,
+                                          left: 8,
+                                        ),
+                                        child:
+                                            seasonDetail['episodes'][index]['still_path'] !=
+                                                null
+                                            ? Stack(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          8,
+                                                        ),
+                                                    child: Image.network(
+                                                      "https://image.tmdb.org/t/p/w200${seasonDetail['episodes'][index]['still_path']}",
+                                                      fit: BoxFit.cover,
+                                                      width: 120,
+                                                      height: 100,
+                                                      loadingBuilder:
+                                                          (
+                                                            context,
+                                                            child,
+                                                            loadingProgress,
+                                                          ) {
+                                                            if (loadingProgress ==
+                                                                null)
+                                                              return child;
+                                                            return Center(
+                                                              child: CircularProgressIndicator(
+                                                                color: Colors
+                                                                    .red[400],
+                                                                value:
+                                                                    loadingProgress
+                                                                            .expectedTotalBytes !=
+                                                                        null
+                                                                    ? loadingProgress
+                                                                              .cumulativeBytesLoaded /
+                                                                          loadingProgress
+                                                                              .expectedTotalBytes!
+                                                                    : null,
+                                                              ),
+                                                            );
+                                                          },
                                                     ),
-                                                  );
-                                                },
-                                              ),
-                                              Positioned(
-                                                top: 5,
-                                                left: 30,
-                                                child: Icon(
-                                                  Icons.play_circle_outlined,
-                                                  size: 50,
-                                                  color: Colors.white70,
+                                                  ),
+                                                  Positioned(
+                                                    top: 25,
+                                                    left: 35,
+                                                    child: Icon(
+                                                      Icons
+                                                          .play_circle_outlined,
+                                                      size: 50,
+                                                      color: Colors.white70,
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : Container(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  color: Colors.grey[800],
+                                                ),
+                                                child: Center(
+                                                  child: Icon(
+                                                    Icons.movie,
+                                                    size: 50,
+                                                    color: Colors.grey,
+                                                  ),
                                                 ),
                                               ),
-                                            ],
-                                          )
-                                        : Container(
-                                            width: 100,
-                                            color: Colors.grey[800],
-                                            child: Center(
-                                              child: Icon(
-                                                Icons.movie,
-                                                size: 50,
-                                                color: Colors.grey,
+                                      ),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              "${seasonDetail['episodes'][index]['name']}",
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 16,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(height: 4),
+                                            Container(
+                                              width:
+                                                  MediaQuery.of(
+                                                    context,
+                                                  ).size.width *
+                                                  0.55,
+                                              height: 61,
+                                              child: SingleChildScrollView(
+                                                child: Text(
+                                                  "${seasonDetail['episodes'][index]['overview'] ?? 'No description available'}",
+                                                  style: TextStyle(
+                                                    color: Colors.grey[400],
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                    title: Text(
-                                      "${seasonDetail['episodes'][index]['name']}",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    subtitle: Container(
-                                      height: 75,
-                                      child: SingleChildScrollView(
-                                        child: Text(
-                                          "${seasonDetail['episodes'][index]['overview']}",
+                                          ],
                                         ),
                                       ),
-                                    ),
+                                    ],
                                   ),
                                 ),
                               );

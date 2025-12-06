@@ -9,7 +9,8 @@ import 'package:movie_rader/pages/search.dart';
 import 'package:movie_rader/pages/tv.dart' as TvPage;
 
 class Home extends StatefulWidget {
-  const Home({super.key});
+  final int initialIndex;
+  const Home({super.key, this.initialIndex = 0});
 
   @override
   State<Home> createState() => _HomeState();
@@ -31,12 +32,6 @@ class _HomeState extends State<Home> {
   final readaccesstoken =
       "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
 
-  @override
-  void initState() {
-    super.initState();
-    loadmovies();
-  }
-
   Future<void> loadmovies() async {
     setState(() {
       _isLoading = true;
@@ -49,7 +44,10 @@ class _HomeState extends State<Home> {
         logConfig: ConfigLogger(showLogs: true, showErrorLogs: true),
       );
 
-      Map trendingresult = await tmdbcustomlogs.v3.trending.getTrending();
+      Map trendingresult = await tmdbcustomlogs.v3.trending.getTrending(
+        mediaType: MediaType.movie,
+        timeWindow: TimeWindow.week,
+      );
       Map comingsoonresult = await tmdbcustomlogs.v3.movies.getUpcoming();
       Map mostpopularresult = await tmdbcustomlogs.v3.movies.getPopular();
       Map topratedresult = await tmdbcustomlogs.v3.movies.getTopRated();
@@ -99,23 +97,34 @@ class _HomeState extends State<Home> {
         }
       }
     }
+    print(trendingmovies);
   }
 
-  int _selectedIndex = 0;
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+    loadmovies();
+  }
+
   void _onItemTapped(int index) {
+    if (_selectedIndex == index) return;
+
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (context) {
           if (index == 0) {
-            return Home();
+            return Home(initialIndex: 0);
           } else if (index == 1) {
-            return TvPage.TvShow();
+            return TvPage.TvShow(initialIndex: 1);
           } else {
-            return Home();
+            return Home(initialIndex: 2);
           }
         },
       ),
@@ -216,16 +225,29 @@ class _HomeState extends State<Home> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Movies'),
           BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'Web Series'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_attraction),
-            label: 'Anime',
-          ),
         ],
         onTap: (index) {
           _onItemTapped(index);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) {
+                if (index == 0) {
+                  return Home();
+                } else if (index == 1) {
+                  return TvPage.TvShow();
+                } else {
+                  return Home();
+                }
+              },
+            ),
+          );
         },
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.red[400],
+        selectedItemColor: Colors.red,
+        unselectedItemColor: Colors.grey[600],
+        backgroundColor: Colors.black,
+        type: BottomNavigationBarType.fixed,
       ),
     );
   }

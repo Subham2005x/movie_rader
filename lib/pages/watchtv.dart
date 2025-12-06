@@ -403,11 +403,41 @@ class _WatchTvState extends State<WatchTv> {
                           // Runtime and Rating Row
                           Row(
                             children: [
-                              // Runtime
-
-                               (movieDetails['episode_run_time'] != null &&
+                              // Season and episode 
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[850],
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      
+                                      Icon(
+                                        Icons.tv,
+                                        size: 16,
+                                        color: Colors.grey[400],
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        "S${widget.seasonNumber} & E${widget.episodeNumber}",
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[300],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                ,  
+                              SizedBox(width: 12),
+                               if (movieDetails['episode_run_time'] != null &&
                                   (movieDetails['episode_run_time'] as List)
-                                      .isNotEmpty)?
+                                      .isNotEmpty)
                                 Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -435,26 +465,9 @@ class _WatchTvState extends State<WatchTv> {
                                       ),
                                     ],
                                   ),
-                                ): 
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[850],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    ' N/A',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[500],
-                                    ),
-                                  ),
                                 ),
-                                 
-                              SizedBox(width: 12),
+
+                             
 
                               // Rating
                               if (movieDetails['vote_average'] != null &&
@@ -513,26 +526,14 @@ class _WatchTvState extends State<WatchTv> {
                           SizedBox(height: 16),
 
                           // Release Date
-                          if (movieDetails['release_date'] != null &&
-                              movieDetails['release_date']
-                                  .toString()
-                                  .isNotEmpty)
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 14,
-                                  color: Colors.grey[500],
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  "Released: ${movieDetails['release_date']}",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[400],
-                                  ),
-                                ),
-                              ],
+                          if (movieDetails['air_date'] != null &&
+                              movieDetails['air_date'].toString().isNotEmpty)
+                            Text(
+                              "📅 Released on: ${movieDetails['air_date']}",
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 14,
+                              ),
                             ),
 
                           // Divider
