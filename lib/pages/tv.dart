@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:movie_rader/pages/category.dart';
 import 'package:movie_rader/widgets/MostPopulartv.dart';
 import 'package:movie_rader/widgets/airingtodaytv.dart';
 import 'package:movie_rader/widgets/popularhinditv.dart';
@@ -25,7 +26,25 @@ class _TvShowState extends State<TvShow> {
   bool _isLoading = true;
   bool _hasError = false;
   int _retryCount = 0;
+  int selectedGenreId = 0;
+  List genresseriesresult = [];
   final int _maxRetries = 5;
+  List<String> bannedDomains = [
+  "ullu.app",
+  "ullu.com",
+  "ullu.digital",
+  "altbalaji.com",
+  "balajitelefilms",
+  "kooku.app",
+  "kooku.app",
+  "hotshots",
+  "flizmovies",
+  "rabbitmovies",
+  "primeshots",
+  "huntcinema",
+  "boomfilms",
+  "hotsflix",
+];
 
   final String apikey = "e0d56cbed100b1c110143ac896b51913";
   final readaccesstoken =
@@ -48,43 +67,37 @@ class _TvShowState extends State<TvShow> {
       Map onairtodayresult = await tmdbcustomlogs.v3.tv.getOnTheAir();
       Map mostpopularresult = await tmdbcustomlogs.v3.tv.getPopular();
       Map topratedresult = await tmdbcustomlogs.v3.tv.getTopRated();
-      Map popularhinditvresult = await tmdbcustomlogs.v3.tv.getPopular(
-        language: "hi-IN",
+      Map popularhinditvresult = await tmdbcustomlogs.v3.discover.getTvShows(
+        withOrginalLanguage: "hi",
       );
 
-      List popularhinditvsort = List.from(
-        popularhinditvresult['results'] ?? [],
-      );
-
-      // Fetch detailed info for each series (to get accurate 'popularity') and then sort by that popularity.
-      final detailFutures = popularhinditvsort.map((item) async {
-        final id = item['id'];
+      List popularhinditvsort = [];
+      
+      for (var item in popularhinditvresult['results']) {
         try {
-          // fetch details with Hindi language parameter and capture original language
-          Map details = await tmdbcustomlogs.v3.tv.getDetails(
-            id,
-            language: "hi-IN",
-          );
-          return {
-            ...item,
-            'popularity': details['popularity'] ?? item['popularity'] ?? 0,
-            'origin_country':
-                details['origin_country'] ?? item['origin_country'] ?? 'IN',
-          };
+          // Fetch detailed info for each TV show to get homepage
+          Map tvDetails = await tmdbcustomlogs.v3.tv.getDetails(item['id']);
+          
+          String homepage = tvDetails['homepage'] ?? '';
+
+          // Check for banned domains in homepage
+          bool hasBannedDomain = bannedDomains.any((domain) => homepage.toLowerCase().contains(domain.toLowerCase()));
+          
+          if (!hasBannedDomain) {
+        // Add the item with details merged
+        popularhinditvsort.add({...item, ...tvDetails});
+          }
         } catch (e) {
-          return {
-            ...item,
-            'popularity': item['popularity'] ?? 0,
-            'origin_country': item['origin_country'] ?? 'IN',
-          };
+          print('Error fetching details for TV show ${item['id']}: $e');
+          // Skip this item if there's an error
         }
-      }).toList();
+      }
 
-      final List popularHindiWithDetails = await Future.wait(detailFutures);
-
-      popularHindiWithDetails.sort(
-        (a, b) => (b['popularity'] as num).compareTo(a['popularity'] as num),
+      popularhinditvsort.sort(
+        (a, b) => ((b['popularity'] ?? 0) as num).compareTo((a['popularity'] ?? 0) as num),
       );
+
+      final List popularHindiWithDetails = popularhinditvsort;
 
       if (mounted) {
         setState(() {
@@ -124,6 +137,101 @@ class _TvShowState extends State<TvShow> {
       }
     }
     print(popularhinditv);
+  }
+
+  Future<void> selectGenre(int genreId) async {
+    setState(() {
+      selectedGenreId = genreId;
+    });
+
+    // Close the drawer first
+    Navigator.pop(context);
+
+    // Small delay to ensure drawer is closed
+    await Future.delayed(Duration(milliseconds: 100));
+
+    if (!mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(child: CircularProgressIndicator(color: Colors.red[400]));
+      },
+    );
+
+    int retryCount = 0;
+    int maxRetries = 5;
+    bool success = false;
+
+    while (retryCount < maxRetries && !success) {
+      try {
+        print(
+          'Attempting to load genre movies (attempt ${retryCount + 1}/$maxRetries)',
+        );
+
+        var tmdbcustomlogs = TMDB(
+          ApiKeys(apikey, readaccesstoken),
+          logConfig: ConfigLogger(showLogs: true, showErrorLogs: true),
+        );
+
+        Map genresseries = await tmdbcustomlogs.v3.discover.getTvShows(
+          withGenres: selectedGenreId.toString(),
+        );
+
+        genresseriesresult = genresseries['results'] ?? [];
+        print('Genre series loaded: ${genresseriesresult.length} series');
+        success = true;
+
+        if (mounted) {
+          // Close loading dialog
+          Navigator.pop(context);
+
+          // Navigate to category page
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategoryGenre(
+                genreresult: genresseriesresult,
+                genreName: genres.firstWhere(
+                  (genre) => genre['id'] == selectedGenreId,
+                  orElse: () => {'name': 'Selected Genre'},
+                )['name'],
+                type: "Series",
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print(
+          'Error loading genre movies (attempt ${retryCount + 1}/$maxRetries): $e',
+        );
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          await Future.delayed(Duration(seconds: 2 * retryCount));
+        } else {
+          // All retries failed
+          if (mounted) {
+            // Close loading dialog
+            Navigator.pop(context);
+
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Failed to load genre movies after $maxRetries attempts. Please try again.',
+                ),
+                backgroundColor: Colors.red[400],
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      }
+    }
   }
 
   late int _selectedIndex;
@@ -179,7 +287,7 @@ class _TvShowState extends State<TvShow> {
           ),
         ],
       ),
-      drawer: Drawer(child: sideDrawer(context, genres)),
+      drawer: Drawer(child: sideDrawer(context, genres, selectGenre)),
       body: _isLoading
           ? Center(
               child: Column(
@@ -254,7 +362,7 @@ class _TvShowState extends State<TvShow> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: 'Movies'),
-          BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'TV Shows'),
+          BottomNavigationBarItem(icon: Icon(Icons.tv), label: 'Web Series'),
         ],
         onTap: (index) {
           _onItemTapped(index);
@@ -262,13 +370,13 @@ class _TvShowState extends State<TvShow> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.red[400],
         unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.black,
+        // backgroundColor: Colors.black,
       ),
     );
   }
 }
 
-Widget sideDrawer(BuildContext context, List genres) {
+Widget sideDrawer(BuildContext context, List genres, Function(int) onGenreSelected) {
   return ListView(
     children: [
       DrawerHeader(
@@ -306,7 +414,7 @@ Widget sideDrawer(BuildContext context, List genres) {
         child: Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: [for (var genre in genres) customWrapWidget(genre['name'])],
+          children: [for (var genre in genres) customWrapWidget(genre['name'], genre['id'], onGenreSelected)],
         ),
       ),
       Container(
@@ -322,9 +430,12 @@ Widget sideDrawer(BuildContext context, List genres) {
   );
 }
 
-Widget customWrapWidget(String text) {
+Widget customWrapWidget(String text, int id, Function onGenreSelected) {
   return InkWell(
-    onTap: () {},
+    onTap: () {
+      print('Genre selected: $text');
+      onGenreSelected(id);
+    },
     splashColor: Colors.transparent,
     child: Container(
       padding: EdgeInsets.all(8),

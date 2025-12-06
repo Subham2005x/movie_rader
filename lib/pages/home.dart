@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:movie_rader/pages/search.dart';
 import 'package:movie_rader/widgets/comingsoon.dart';
+import 'package:movie_rader/widgets/newrealeasehindi.dart';
+import 'package:movie_rader/widgets/tophindi.dart';
 import 'package:tmdb_api/tmdb_api.dart';
 import 'package:movie_rader/widgets/trendingmovie.dart';
 import 'package:movie_rader/widgets/MostPopular.dart';
 import 'package:movie_rader/widgets/toprated.dart';
 // import 'package:movie_rader/widgets/tophindi.dart';
-import 'package:movie_rader/pages/search.dart';
 import 'package:movie_rader/pages/tv.dart' as TvPage;
+import 'package:movie_rader/pages/category.dart';
 
 class Home extends StatefulWidget {
   final int initialIndex;
@@ -21,12 +24,32 @@ class _HomeState extends State<Home> {
   List comingsoon = [];
   List mostpopular = [];
   List toprated = [];
-  List tophindi = [];
+  List popularhindi = [];
   List genres = [];
+  List newreleases = [];
+  List genresmoviesresult = [];
   bool _isLoading = true;
   bool _hasError = false;
   int _retryCount = 0;
   final int _maxRetries = 5;
+  int selectedGenreId = -1;
+
+  List<String> bannedDomains = [
+    "ullu.app",
+    "ullu.com",
+    "ullu.digital",
+    "altbalaji.com",
+    "balajitelefilms",
+    "kooku.app",
+    "kooku.app",
+    "hotshots",
+    "flizmovies",
+    "rabbitmovies",
+    "primeshots",
+    "huntcinema",
+    "boomfilms",
+    "hotsflix",
+  ];
 
   final String apikey = "e0d56cbed100b1c110143ac896b51913";
   final readaccesstoken =
@@ -52,6 +75,19 @@ class _HomeState extends State<Home> {
       Map mostpopularresult = await tmdbcustomlogs.v3.movies.getPopular();
       Map topratedresult = await tmdbcustomlogs.v3.movies.getTopRated();
       Map genresresult = await tmdbcustomlogs.v3.genres.getMovieList();
+      Map popularhindimovieresult = await tmdbcustomlogs.v3.discover.getMovies(
+        // primaryReleaseYear: DateTime.now().year,
+        year: DateTime.now().year,
+        voteAverageGreaterThan: 6,
+
+        // sortBy: SortMoviesBy.popularityDesc,
+        withOrginalLanguage: "hi",
+      );
+      Map newreleasesresult = await tmdbcustomlogs.v3.discover.getMovies(
+        primaryReleaseYear: DateTime.now().year,
+        sortBy: SortMoviesBy.releaseDateDesc,
+        withOrginalLanguage: "hi",
+      );
 
       // Sort coming soon movies by release date (newest first)
       List comingsoonList = comingsoonresult['results'] ?? [];
@@ -68,6 +104,8 @@ class _HomeState extends State<Home> {
           mostpopular = mostpopularresult['results'] ?? [];
           toprated = topratedresult['results'] ?? [];
           genres = genresresult['genres'] ?? [];
+          popularhindi = popularhindimovieresult['results'] ?? [];
+          newreleases = newreleasesresult['results'] ?? [];
           _isLoading = false;
           _retryCount = 0;
         });
@@ -97,7 +135,104 @@ class _HomeState extends State<Home> {
         }
       }
     }
-    print(trendingmovies);
+
+    print(genresmoviesresult);
+  }
+
+  Future<void> selectGenre(int genreId) async {
+    setState(() {
+      selectedGenreId = genreId;
+    });
+
+    // Close the drawer first
+    Navigator.pop(context);
+
+    // Small delay to ensure drawer is closed
+    await Future.delayed(Duration(milliseconds: 100));
+
+    if (!mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(child: CircularProgressIndicator(color: Colors.red[400]));
+      },
+    );
+
+    int retryCount = 0;
+    int maxRetries = 5;
+    bool success = false;
+
+    while (retryCount < maxRetries && !success) {
+      try {
+        print(
+          'Attempting to load genre movies (attempt ${retryCount + 1}/$maxRetries)',
+        );
+
+        var tmdbcustomlogs = TMDB(
+          ApiKeys(apikey, readaccesstoken),
+          logConfig: ConfigLogger(showLogs: true, showErrorLogs: true),
+        );
+
+        Map genresmovies = await tmdbcustomlogs.v3.discover.getMovies(
+          withGenres: selectedGenreId.toString(),
+        );
+
+        genresmoviesresult = genresmovies['results'] ?? [];
+
+        print('Genre movies loaded: ${genresmoviesresult.length} movies');
+        success = true;
+
+        if (mounted) {
+          // Close loading dialog
+          Navigator.pop(context);
+
+          // Navigate to category page
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategoryGenre(
+                genreresult: genresmoviesresult,
+                genreName: genres.firstWhere(
+                  (genre) => genre['id'] == selectedGenreId,
+                  orElse: () => {'name': 'Selected Genre'},
+                )['name'],
+                type: "Movies",
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        print(
+          'Error loading genre movies (attempt ${retryCount + 1}/$maxRetries): $e',
+        );
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          // Wait before retrying (exponential backoff)
+          await Future.delayed(Duration(seconds: 2 * retryCount));
+        } else {
+          // All retries failed
+          if (mounted) {
+            // Close loading dialog
+            Navigator.pop(context);
+
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Failed to load genre movies after $maxRetries attempts. Please try again.',
+                ),
+                backgroundColor: Colors.red[400],
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+        }
+      }
+    }
   }
 
   late int _selectedIndex;
@@ -146,14 +281,17 @@ class _HomeState extends State<Home> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SearchMovie()),
+                MaterialPageRoute(
+                  builder: (context) =>
+                      SearchMovie(),
+                ),
               );
             },
             icon: Icon(Icons.search),
           ),
         ],
       ),
-      drawer: Drawer(child: sideDrawer(context, genres)),
+      drawer: Drawer(child: sideDrawer(context, genres, selectGenre)),
       body: _isLoading
           ? Center(
               child: Column(
@@ -214,9 +352,10 @@ class _HomeState extends State<Home> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Comingsoon(comingsoon: comingsoon),
-                  // Tophindi(tophindi: tophindi),
+                  Tophindi(tophindi: popularhindi),
                   Trendingmovie(trendingmovies: trendingmovies),
                   Mostpopular(mostpopular: mostpopular),
+                  NewReleaseHindi(newreleasehindi: newreleases),
                   Toprated(toprated: toprated),
                 ],
               ),
@@ -246,14 +385,18 @@ class _HomeState extends State<Home> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.red,
         unselectedItemColor: Colors.grey[600],
-        backgroundColor: Colors.black,
+        // backgroundColor: Colors.black,
         type: BottomNavigationBarType.fixed,
       ),
     );
   }
 }
 
-Widget sideDrawer(BuildContext context, List genres) {
+Widget sideDrawer(
+  BuildContext context,
+  List genres,
+  Function(int) onGenreSelected,
+) {
   return ListView(
     children: [
       DrawerHeader(
@@ -291,7 +434,10 @@ Widget sideDrawer(BuildContext context, List genres) {
         child: Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: [for (var genre in genres) customWrapWidget(genre['name'])],
+          children: [
+            for (var genre in genres)
+              customWrapWidget(genre['name'], genre['id'], onGenreSelected),
+          ],
         ),
       ),
       Container(
@@ -307,9 +453,12 @@ Widget sideDrawer(BuildContext context, List genres) {
   );
 }
 
-Widget customWrapWidget(String text) {
+Widget customWrapWidget(String text, int id, Function(int) onGenreSelected) {
   return InkWell(
-    onTap: () {},
+    onTap: () {
+      print("Selected Genre ID: $id");
+      onGenreSelected(id);
+    },
     splashColor: Colors.transparent,
     child: Container(
       padding: EdgeInsets.all(8),

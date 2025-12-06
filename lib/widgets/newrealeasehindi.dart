@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:movie_rader/pages/detailed.dart';
 
-class Tophindi extends StatefulWidget {
-  const Tophindi({super.key, required this.tophindi});
+class NewReleaseHindi extends StatefulWidget {
+  const NewReleaseHindi({super.key, required this.newreleasehindi});
 
-  final List tophindi;
+  final List newreleasehindi;
 
   @override
-  State<Tophindi> createState() => _TophindiState();
+  State<NewReleaseHindi> createState() => _NewReleaseHindiState();
 }
 
-class _TophindiState extends State<Tophindi> {
+class _NewReleaseHindiState extends State<NewReleaseHindi> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -21,19 +21,19 @@ class _TophindiState extends State<Tophindi> {
             alignment: Alignment.topLeft,
             padding: EdgeInsets.all(8),
             child: Text(
-              "Popular Hindi Movies",
+              "Latest Hindi Movies",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
           Container(
             height: 314,
-            child: widget.tophindi.isEmpty
+            child: widget.newreleasehindi.isEmpty
                 ? Center(
                     child: CircularProgressIndicator(color: Colors.red[400]),
                   )
                 : ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    itemCount: widget.tophindi.length,
+                    itemCount: widget.newreleasehindi.length,
                     itemBuilder: (BuildContext context, int index) {
                       return InkWell(
                         onTap: () => {
@@ -41,7 +41,7 @@ class _TophindiState extends State<Tophindi> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => Detailed(
-                                movieId: widget.tophindi[index]['id']
+                                movieId: widget.newreleasehindi[index]['id']
                                     .toString(),
                               ),
                             ),
@@ -61,7 +61,7 @@ class _TophindiState extends State<Tophindi> {
                                   color: Colors.red,
                                   image: DecorationImage(
                                     image: NetworkImage(
-                                      "https://image.tmdb.org/t/p/w500${widget.tophindi[index]['poster_path']}",
+                                      "https://image.tmdb.org/t/p/w500${widget.newreleasehindi[index]['poster_path']}",
                                     ),
                                     fit: BoxFit.cover,
                                   ),
@@ -79,14 +79,14 @@ class _TophindiState extends State<Tophindi> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "${widget.tophindi[index]['title'] ?? 'Movie Name'}",
+                                          "${widget.newreleasehindi[index]['title'] ?? 'Movie Name'}",
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         Text(
-                                          widget.tophindi[index]['release_date'] != null ? DateTime.parse(widget.tophindi[index]['release_date']).year.toString() : 'Year',
+                                          widget.newreleasehindi[index]['release_date'] != null ? DateTime.parse(widget.newreleasehindi[index]['release_date']).year.toString() : 'Year',
                                           style: TextStyle(fontSize: 12),
                                         ),
                                       ],
@@ -100,7 +100,7 @@ class _TophindiState extends State<Tophindi> {
                                         size: 16,
                                       ),
                                       SizedBox(width: 2),
-                                      Text("${widget.tophindi[index]['vote_average'] == null ? 'N/A' : widget.tophindi[index]['vote_average'].toStringAsFixed(1)}"),
+                                      Text("${widget.newreleasehindi[index]['vote_average'] == null ? 'N/A' : widget.newreleasehindi[index]['vote_average'].toStringAsFixed(1)}"),
                                     ],
                                   ),
                                 ],
