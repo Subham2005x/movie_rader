@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tmdb_api/tmdb_api.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Detailedcomingsoon extends StatefulWidget {
   const Detailedcomingsoon({super.key, required this.movieId});
@@ -24,9 +25,8 @@ class _DetailedcomingsoonState extends State<Detailedcomingsoon> {
     _loadMovieDetails();
   }
 
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMDEwNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
 
   Future<void> _loadMovieDetails() async {
     setState(() {

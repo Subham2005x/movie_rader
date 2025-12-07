@@ -141,20 +141,33 @@ class _CategoryGenreState extends State<CategoryGenre> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              "${widget.genreresult[index]['title'] ?? 'Movie Name'}",
+                                              "${widget.type != 'Series' ? widget.genreresult[index]['title'] ?? 'Movie Name' : widget.genreresult[index]['name'] ?? 'Series Name'}",
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
                                               ),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             Text(
-                                              widget.genreresult[index]['release_date'] !=
+                                              widget.genreresult[index]
+                                                          ['release_date'] !=
                                                       null
                                                   ? DateTime.parse(
-                                                      widget
-                                                          .genreresult[index]['release_date'],
-                                                    ).year.toString()
-                                                  : 'Year',
+                                                          widget.genreresult[
+                                                                  index]
+                                                              ['release_date'])
+                                                      .year
+                                                      .toString()
+                                                  : widget.genreresult[index]
+                                                              ['first_air_date'] !=
+                                                          null
+                                                      ? DateTime.parse(
+                                                              widget.genreresult[
+                                                                      index]
+                                                                  [
+                                                                  'first_air_date'])
+                                                          .year
+                                                          .toString()
+                                                      : 'Year',
                                               style: TextStyle(fontSize: 12),
                                             ),
                                           ],
@@ -183,6 +196,7 @@ class _CategoryGenreState extends State<CategoryGenre> {
                       },
                     ),
                   ),
+       
                 ],
               ),
             ),

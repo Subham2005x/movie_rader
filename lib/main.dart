@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:movie_rader/pages/home.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(MyApp());
 }
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:movie_rader/pages/detailed.dart';
 import 'package:tmdb_api/tmdb_api.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SearchMovie extends StatefulWidget {
   const SearchMovie({super.key});
@@ -11,9 +12,8 @@ class SearchMovie extends StatefulWidget {
 
 class _SearchMovieState extends State<SearchMovie> {
   List searchResult = [];
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
   bool _isSearching = false;
   String _lastQuery = '';
   int _retryCount = 0;

@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tmdb_api/tmdb_api.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Watch extends StatefulWidget {
   const Watch({super.key, required this.movieID});
@@ -16,9 +17,8 @@ class Watch extends StatefulWidget {
 
 class _WatchState extends State<Watch> {
   Map<dynamic, dynamic> movieDetails = {};
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
 
   WebViewController? _controller;
   bool _isLoading = true;
@@ -122,7 +122,7 @@ class _WatchState extends State<Watch> {
             onNavigationRequest: (NavigationRequest request) {
               // Get the initial provider URL domain
               final providerUrl =
-                  'https://www.nontongo.win/embed/movie/${widget.movieID}';
+                  'https://${dotenv.env['websiteURL']}/embed/movie/${widget.movieID}';
               final providerDomain = Uri.parse(providerUrl).host;
               final requestDomain = Uri.parse(request.url).host;
 
@@ -237,13 +237,13 @@ class _WatchState extends State<Watch> {
           ),
         )
         ..loadRequest(
-          Uri.parse('https://www.nontongo.win/embed/movie/${widget.movieID}'),
+          Uri.parse('https://${dotenv.env['websiteURL']}/embed/movie/${widget.movieID}'),
         );
     } else {
       // For Windows/Web, automatically open in browser
       _isLoading = false;
       Future.delayed(Duration(milliseconds: 500), () {
-        _launchURL('https://www.nontongo.win/embed/movie/${widget.movieID}');
+        _launchURL('https://${dotenv.env['websiteURL']}/embed/movie/${widget.movieID}');
       });
     }
   }
@@ -693,7 +693,7 @@ class _WatchState extends State<Watch> {
                         ElevatedButton.icon(
                           onPressed: () {
                             _launchURL(
-                              'https://www.nontongo.win/embed/movie/${widget.movieID}',
+                              'https://${dotenv.env['websiteURL']}/embed/movie/${widget.movieID}',
                             );
                           },
                           icon: Icon(Icons.play_circle_outline, size: 28),

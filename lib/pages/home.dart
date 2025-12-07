@@ -10,6 +10,7 @@ import 'package:movie_rader/widgets/toprated.dart';
 // import 'package:movie_rader/widgets/tophindi.dart';
 import 'package:movie_rader/pages/tv.dart' as TvPage;
 import 'package:movie_rader/pages/category.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Home extends StatefulWidget {
   final int initialIndex;
@@ -51,9 +52,8 @@ class _HomeState extends State<Home> {
     "hotsflix",
   ];
 
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
 
   Future<void> loadmovies() async {
     setState(() {

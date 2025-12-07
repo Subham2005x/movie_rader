@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:movie_rader/pages/watch.dart';
 import 'package:tmdb_api/tmdb_api.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Detailed extends StatefulWidget {
   const Detailed({super.key, required this.movieId});
@@ -26,9 +27,8 @@ class _DetailedState extends State<Detailed> {
     _loadMovieDetails();
   }
 
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
 
   Future<void> _loadMovieDetails() async {
     setState(() {

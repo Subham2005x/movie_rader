@@ -4,6 +4,7 @@ import 'dart:io' show Platform;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:tmdb_api/tmdb_api.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class WatchTv extends StatefulWidget {
   const WatchTv({super.key, required this.seriesID, required this.seasonNumber, required this.episodeNumber});
@@ -18,9 +19,8 @@ class WatchTv extends StatefulWidget {
 
 class _WatchTvState extends State<WatchTv> {
   Map<dynamic, dynamic> movieDetails = {};
-  final String apikey = "e0d56cbed100b1c110143ac896b51913";
-  final readaccesstoken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJlMGQ1NmNiZWQxMDBiMWMxMTAxNDNhYzg5NmI1MTkxMyIsIm5iZiI6MTc2MzUzODg0MS4yNDEsInN1YiI6IjY5MWQ3Nzk5NDVhMTQ0OTQxNjJlMTk1NCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IZUTpsCrXtWdYqs4CrZXhxiX3SgiG4T3sG7B8kkPWBw";
+  final String apikey = dotenv.env['ApiKey'] ?? '';
+  final readaccesstoken = dotenv.env['readAccessToken'] ?? '';
 
   WebViewController? _controller;
   bool _isLoading = true;
@@ -124,7 +124,7 @@ class _WatchTvState extends State<WatchTv> {
             onNavigationRequest: (NavigationRequest request) {
               // Get the initial provider URL domain
               final providerUrl =
-                  'https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}';
+                  'https://${dotenv.env['websiteURL']}/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}';
               final providerDomain = Uri.parse(providerUrl).host;
               final requestDomain = Uri.parse(request.url).host;
 
@@ -239,13 +239,13 @@ class _WatchTvState extends State<WatchTv> {
           ),
         )
         ..loadRequest(
-          Uri.parse('https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}'),
+          Uri.parse('https://${dotenv.env['websiteURL']}/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}'),
         );
     } else {
       // For Windows/Web, automatically open in browser
       _isLoading = false;
       Future.delayed(Duration(milliseconds: 500), () {
-        _launchURL('https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}');
+        _launchURL('https://${dotenv.env['websiteURL']}/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}');
       });
     }
   }
@@ -697,7 +697,7 @@ class _WatchTvState extends State<WatchTv> {
                         ElevatedButton.icon(
                           onPressed: () {
                             _launchURL(
-                              'https://www.NontonGo.win/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}',
+                              'https://${dotenv.env['websiteURL']}/embed/tv/${widget.seriesID}/${widget.seasonNumber}/${widget.episodeNumber}',
                             );
                           },
                           icon: Icon(Icons.play_circle_outline, size: 28),
